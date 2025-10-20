@@ -4,8 +4,9 @@ import './index.css';
 import App from './App';
 import { HashRouter } from 'react-router-dom';
 import reportWebVitals from './reportWebVitals';
-import {registerLicense} from '@syncfusion/ej2-base';
-registerLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH9fcnVcR2ZYU0N+WEtWYEg=")
+
+// Initialize Syncfusion license FIRST - before any other imports
+import './syncfusion-license';
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );

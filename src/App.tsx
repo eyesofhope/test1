@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Home from './pages/Home';
-import {DocumentEditorContainerComponent, Toolbar, Inject} from '@syncfusion/ej2-react-documenteditor';
+import {DocumentEditorContainerComponent, Ribbon, Inject} from '@syncfusion/ej2-react-documenteditor';
 import './App.css';
 import TextEditorToolbar from './TextEditorToolbar';
+
+// Ensure Syncfusion license is registered
+import './syncfusion-license';
+
+// Inject Ribbon service as recommended by Syncfusion
+DocumentEditorContainerComponent.Inject(Ribbon);
 
 function EditorPage() {
   const editorRef = useRef<DocumentEditorContainerComponent | null>(null);
@@ -215,20 +221,17 @@ function EditorPage() {
         ref={editorRef} 
         height={"calc(100vh - 56px)"}
         enableToolbar={true}
+        toolbarMode="Ribbon"
         created={onDocumentEditorCreated}
         serviceUrl="https://ej2services.syncfusion.com/production/web-services/api/documenteditor/"
-        showPropertiesPane={false}
-        toolbarItems={[
-          { id: 'textMenuToggle', text: 'Text', tooltipText: 'Text formatting', cssClass: 'e-tbar-btn-text' },
-          'Separator',
-          'New','Open','Undo','Redo','Image','Table','Hyperlink','Find','Bookmark'
-        ]}
+        showPropertiesPane={true}
         toolbarClick={onToolbarClick}>
-        <Inject services={[Toolbar]}></Inject>
+        <Inject services={[Ribbon]}></Inject>
       </DocumentEditorContainerComponent>
       </div>
 
-      {/* Custom bottom toolbar that appears during editing and when toggled */}
+      {/* Custom bottom toolbar - DISABLED */}
+      {/* 
       {(isEditing || showTextPanel) && (
         <div
           ref={bottomToolbarRef}
@@ -246,6 +249,7 @@ function EditorPage() {
           </div>
         </div>
       )}
+      */}
 
       <button onClick={openModal} className="save-btn">
         <span className="save-btn__icon" aria-hidden="true">
