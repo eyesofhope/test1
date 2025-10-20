@@ -1,0 +1,22 @@
+.text-editing-toolbar { border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 8px; background-color: #ffffff; }
+
+/* Horizontal layout; groups scroll horizontally on small screens */
+.text-panel { display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px; background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin: 8px 0; overflow-x: auto; }
+.text-row { display: flex; align-items: center; gap: 8px; }
+.text-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 44px; padding: 0 10px; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; color: #374151; cursor: pointer; touch-action: manipulation; }
+.text-btn:active { background: #f3f4f6; }
+.text-select { height: 44px; padding: 0 10px; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; touch-action: manipulation; }
+.text-select.narrow { width: 64px; }
+.text-color { width: 44px; height: 44px; padding: 0; border: 1px solid #d1d5db; border-radius: 4px; touch-action: manipulation; }
+.text-label { padding: 0 4px; }
+.text-sep { width: 1px; height: 24px; background: #e5e7eb; margin: 0 4px; }
+
+@media (max-width: 600px) {
+  .text-panel { gap: 4px; padding: 6px; }
+  .text-btn { min-width: 44px; height: 44px; padding: 0 8px; }
+}
+
+/* Horizontal alignment and spacing for bottom toolbar */
+.custom-bottom-toolbar .text-panel { width: 100%; box-sizing: border-box; }
+
+

@@ -1,38 +1,345 @@
-.App {
-  text-align: center;
-}
+@import url("https://cdn.syncfusion.com/ej2/31.1.23/bootstrap5.css");
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.App{
+  margin: 2%;
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.document-editor-container {
   display: flex;
   flex-direction: column;
+  height: 100%;
+}
+
+.main-toolbar { /* wrapper for syncfusion toolbar area */ }
+
+.text-editing-toolbar-wrapper { border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 5px 8px; background-color: #ffffff; }
+
+/* Place above footer (page info) when needed */
+.text-toolbar-bottom {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+
+/* Fixed custom bottom toolbar that avoids overlap and respects safe area */
+.custom-bottom-toolbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* When bottom toolbar is shown, add padding to editor area */
+.with-bottom-toolbar .e-de-ctnr .e-de-content {
+  padding-bottom: calc(var(--bottom-toolbar-h, 64px) + 8px);
+}
+
+/* Ensure Syncfusion built-in top toolbar remains at top */
+.e-de-ctnr-toolbar {
+  top: 0;
+}
+
+/* Save Button */
+.save-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  gap: 8px;
+  padding: 8px 16px;
+  margin: 20px 0 0 calc(50% - 120px);
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #374151;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+  min-width: 120px;
+  height: 36px;
 }
 
-.App-link {
-  color: #61dafb;
+.save-btn:hover,
+.save-btn:focus-visible {
+  border-color: #9ca3af;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: #f9fafb;
+  outline: none;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.save-btn:active {
+  background: #f3f4f6;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.save-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.save-btn__icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.save-btn__label {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #ffffff;
+  padding: 24px 28px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: min(100vw, 300px);
+  text-align: left;
+}
+
+.modal-content h2 {
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modal-subtitle {
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.modal-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.modal-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.modal-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.modal-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  min-width: 70px;
+}
+
+.modal-btn.save {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
+.modal-btn.save:hover,
+.modal-btn.save:focus-visible {
+  background: #2563eb;
+  border-color: #2563eb;
+  outline: none;
+}
+
+.modal-btn.cancel {
+  background: #ffffff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.modal-btn.cancel:hover,
+.modal-btn.cancel:focus-visible {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  outline: none;
+}
+
+@media (max-width: 600px) {
+  .save-btn {
+    margin: 20px auto 0 auto;
+    min-width: 140px;
   }
-  to {
-    transform: rotate(360deg);
+
+  .modal-content {
+    width: min(95vw, 300px);
+    padding: 20px 24px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .modal-btn {
+    width: 100%;
+  }
+}
+
+/* Mobile toolbar enhancements */
+.e-de-ctnr .e-de-ctnr-toolbar .e-toolbar-items {
+  overflow-x: auto;
+  gap: 4px;
+}
+
+.e-de-ctnr .e-de-ctnr-toolbar .e-tbar-btn {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.e-de-ctnr .e-de-ctnr-toolbar .e-tbar-btn .e-btn-icon {
+  font-size: 18px;
+}
+
+@media (max-width: 600px) {
+  /* Hide heavy dropdowns if any remain */
+  .e-de-ctnr .e-de-ctnr-toolbar .e-de-fontname,
+  .e-de-ctnr .e-de-ctnr-toolbar .e-de-fontsize,
+  .e-de-ctnr .e-de-ctnr-toolbar .e-de-styles {
+    display: none !important;
+  }
+}
+
+/* Full-viewport layout and safe areas */
+html, body, #root {
+  height: 100%;
+}
+
+.App {
+  min-height: 100vh;
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Text formatting dropdown panel */
+.text-panel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+.text-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+}
+
+.text-btn:active {
+  background: #f3f4f6;
+}
+
+.text-sep {
+  width: 1px;
+  height: 24px;
+  background: #e5e7eb;
+  margin: 0 4px;
+}
+
+.text-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.text-select {
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.text-select.narrow {
+  width: 64px;
+}
+
+.text-color {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.text-label {
+  padding: 0 4px;
+}
+
+@media (max-width: 600px) {
+  .text-panel {
+    gap: 4px;
+    padding: 6px;
+  }
+  .text-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
   }
 }

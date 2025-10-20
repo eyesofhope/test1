@@ -1,0 +1,82 @@
+/* DocumentSkeleton component styles */
+
+.document-skeleton {
+  width: 100%;
+  height: calc(100dvh - 56px);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.skeleton-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.skeleton-rect {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+.skeleton-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+
+.skeleton-line {
+  height: 16px;
+  width: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+.skeleton-line--short {
+  width: 65%;
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-rect,
+  .skeleton-line {
+    animation: none;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 600px) {
+  .document-skeleton {
+    padding: 12px;
+  }
+  
+  .skeleton-content {
+    padding: 12px;
+  }
+  
+  .skeleton-line {
+    height: 14px;
+  }
+}

@@ -1,0 +1,8 @@
+services: 
+ word-processor-server: 
+    image: syncfusion/word-processor-server:latest 
+    environment: 
+      #Provide your license key for activation
+      SYNCFUSION_LICENSE_KEY: Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH9fcnVdRGhcU0N+XkFWYEg=
+    ports:
+    - "6002:80"

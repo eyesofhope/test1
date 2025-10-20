@@ -1,0 +1,39 @@
+.home { min-height: 100dvh; display: flex; flex-direction: column; padding: 12px; box-sizing: border-box; padding-top: max(12px, env(safe-area-inset-top)); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.home-header { display:flex; align-items:center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.brand { font-weight: 700; font-size: 22px; }
+.actions { display:flex; gap: 10px; }
+.btn { display:inline-flex; align-items:center; gap:8px; padding:12px 16px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer; min-height: 44px; min-width: 44px; }
+.btn.primary { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+.toolbar { margin-bottom: 12px; }
+.search { width:100%; padding:12px 16px; border-radius:10px; border:1px solid #d1d5db; font-size: 16px; -webkit-appearance: none; appearance: none; touch-action: manipulation; }
+.section { margin-top: 8px; }
+.section-title { font-size:14px; font-weight:600; margin: 8px 4px; color:#6b7280; }
+.grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px; }
+.card { display:flex; flex-direction:column; align-items:flex-start; gap:12px; padding:16px; border:1px solid #e5e7eb; border-radius:12px; background:#fff; cursor:pointer; text-align:left; min-height: 120px; touch-action: manipulation; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card:active { transform: scale(0.98); }
+.card-icon { width:100%; aspect-ratio: 16/12; background:#f5f5f5; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:24px; }
+.card-title { font-weight:600; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; width:100%; }
+.card-meta { width:100%; display:flex; align-items:center; justify-content:space-between; color:#6b7280; font-size:12px; }
+.empty { color:#6b7280; padding:24px; border:1px dashed #e5e7eb; border-radius:8px; text-align:center; }
+
+/* Pull-to-refresh styling compatibility */
+.adm-pull-to-refresh { min-height: 100%; }
+
+/* Medium screen breakpoint (tablets) */
+@media (min-width: 600px) and (max-width: 900px) {
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+
+/* Mobile breakpoint (phones) */
+@media (max-width: 599px) {
+  .grid { grid-template-columns: 1fr; gap: 12px; }
+  .home-header { flex-wrap: wrap; }
+  .brand { font-size: 20px; }
+  .btn { padding: 10px 14px; font-size: 14px; }
+  .search { font-size: 16px; }
+  .card { min-height: 100px; padding: 14px; }
+  .card-icon { font-size: 32px; }
+}
+
+
