@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PullToRefresh } from 'antd-mobile';
+import { PullToRefresh, ConfigProvider } from 'antd-mobile';
+import enUS from 'antd-mobile/es/locales/en-US';
 import { triggerImpact, triggerSuccess } from '../utils/haptics';
 import './Home.css';
 
@@ -113,28 +114,30 @@ export default function Home() {
         </div>
       </div>
 
-      <PullToRefresh onRefresh={handleRefresh}>
-        <h2 className="recents-header">Recent Documents</h2>
-        {filteredRecents.length > 0 ? (
-          <div className="recents-list">
-            {filteredRecents.map(doc => (
-              <div key={doc.id} className="recent-item" onClick={() => openRecent(doc)}>
-                <span className="recent-icon" role="img" aria-hidden="true">📄</span>
-                <div className="recent-info">
-                  <div className="recent-name">{doc.name}</div>
-                  <div className="recent-meta">
-                    {doc.source} • {formatRelativeTime(doc.lastOpened)}
+      <ConfigProvider locale={enUS}>
+        <PullToRefresh onRefresh={handleRefresh}>
+          <h2 className="recents-header">Recent Documents</h2>
+          {filteredRecents.length > 0 ? (
+            <div className="recents-list">
+              {filteredRecents.map(doc => (
+                <div key={doc.id} className="recent-item" onClick={() => openRecent(doc)}>
+                  <span className="recent-icon" role="img" aria-hidden="true">📄</span>
+                  <div className="recent-info">
+                    <div className="recent-name">{doc.name}</div>
+                    <div className="recent-meta">
+                      {doc.source} • {formatRelativeTime(doc.lastOpened)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-recents">
-            Your recent documents will appear here.
-          </div>
-        )}
-      </PullToRefresh>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-recents">
+              Your recent documents will appear here.
+            </div>
+          )}
+        </PullToRefresh>
+      </ConfigProvider>
 
       <input
         ref={fileInputRef}
