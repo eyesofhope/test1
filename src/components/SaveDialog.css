@@ -1,0 +1,197 @@
+/* Overlay styles */
+.save-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Dialog content */
+.save-dialog-content {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+/* Header */
+.save-dialog-header {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+/* Form group */
+.save-dialog-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Label */
+.save-dialog-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Filename input wrapper */
+.save-dialog-filename-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Input */
+.save-dialog-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  min-height: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+
+.save-dialog-input:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-color: #3b82f6;
+}
+
+/* Extension hint */
+.save-dialog-extension {
+  color: #6b7280;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Folder section */
+.save-dialog-folder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Folder info */
+.save-dialog-folder-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Info text */
+.save-dialog-info {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Actions */
+.save-dialog-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* Buttons */
+.save-dialog-btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+}
+
+.save-dialog-btn:hover {
+  background: #f9fafb;
+}
+
+.save-dialog-btn:active {
+  transform: scale(0.98);
+}
+
+/* Primary button */
+.save-dialog-btn--primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.save-dialog-btn--primary:hover {
+  background: #2563eb;
+}
+
+.save-dialog-btn--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.save-dialog-btn--primary:disabled:hover {
+  background: #3b82f6;
+  transform: none;
+}
+
+/* Change folder button */
+.save-dialog-btn--folder {
+  width: 100%;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+}
+
+/* Mobile breakpoint */
+@media (max-width: 600px) {
+  .save-dialog-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .save-dialog-content {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .save-dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .save-dialog-btn {
+    width: 100%;
+  }
+}

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import useIsMobile from '../hooks/useIsMobile'; // Currently unused
 import { PullToRefresh } from 'antd-mobile';
 import { triggerImpact, triggerSuccess } from '../utils/haptics';
 import './Home.css';
@@ -10,17 +9,29 @@ type RecentDoc = {
   name: string;
   lastOpened: number; // epoch ms
   source: 'Device' | 'Cloud' | 'Unknown';
+  filePath?: string;
 };
 
 const RECENTS_KEY = 'recentDocs';
+
+function formatRelativeTime(timestamp: number): string {
+  const now = new Date();
+  const then = new Date(timestamp);
+  const diffInSeconds = Math.round((now.getTime() - then.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  
+  return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 function readRecents(): RecentDoc[] {
   try {
     const raw = localStorage.getItem(RECENTS_KEY);
     if (!raw) return [];
     const arr = JSON.parse(raw);
-    if (Array.isArray(arr)) return arr as RecentDoc[];
-    return [];
+    return Array.isArray(arr) ? (arr as RecentDoc[]).sort((a, b) => b.lastOpened - a.lastOpened) : [];
   } catch {
     return [];
   }
@@ -30,8 +41,7 @@ export default function Home() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState('');
-  const [recents, setRecents] = useState<RecentDoc[]>(() => readRecents());
-  // const isMobile = useIsMobile(); // Currently unused but may be needed for future mobile optimizations
+  const [recents, setRecents] = useState<RecentDoc[]>(readRecents);
 
   useEffect(() => {
     const onStorage = () => setRecents(readRecents());
@@ -39,10 +49,10 @@ export default function Home() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return recents.sort((a,b)=> b.lastOpened - a.lastOpened);
+  const filteredRecents = useMemo(() => {
+    if (!query.trim()) return recents;
     const q = query.toLowerCase();
-    return recents.filter(r => r.name.toLowerCase().includes(q)).sort((a,b)=> b.lastOpened - a.lastOpened);
+    return recents.filter(r => r.name.toLowerCase().includes(q));
   }, [recents, query]);
 
   const createNew = () => {
@@ -59,14 +69,12 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (!file) return;
     navigate('/editor', { state: { action: 'open', file } });
-    // reset so selecting the same file again re-fires
     e.currentTarget.value = '';
   };
 
   const openRecent = (doc: RecentDoc) => {
     triggerImpact('Light');
-    // Navigate to editor; the editor page will try to re-open by name if possible
-    navigate('/editor', { state: { action: 'openByName', name: doc.name } });
+    navigate('/editor', { state: { action: 'openByName', name: doc.name, filePath: doc.filePath || `${doc.name}.docx` } });
   };
 
   const handleRefresh = async () => {
@@ -76,48 +84,56 @@ export default function Home() {
   };
 
   return (
-    <div className="home">
+    <div className="home-container">
       <header className="home-header">
-        <div className="brand">JWORD</div>
-        <div className="actions">
-          <button className="btn primary" onClick={createNew}><span>＋</span> New</button>
-          <button className="btn" onClick={openFromDevice}><span>📂</span> Open</button>
-        </div>
+        <h1 className="home-title">JWORD</h1>
+        <button className="new-doc-btn" onClick={createNew}>
+          <span role="img" aria-hidden="true">➕</span>
+          New Doc
+        </button>
       </header>
 
-      <PullToRefresh onRefresh={handleRefresh}>
-        <div className="toolbar">
-          <input
-            className="search"
-            type="search"
-            placeholder="Search documents"
-            value={query}
-            onChange={(e)=>setQuery(e.target.value)}
-            inputMode="search"
-            enterKeyHint="search"
-            autoComplete="off"
-          />
-        </div>
+      <input
+        className="search-bar"
+        type="search"
+        placeholder="Search documents..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        inputMode="search"
+      />
 
-        <section className="section">
-          <h3 className="section-title">Recent</h3>
-          {filtered.length === 0 ? (
-            <div className="empty">No recent documents yet.</div>
-          ) : (
-            <div className="grid">
-              {filtered.map(doc => (
-                <button key={doc.id} className="card" onClick={()=>openRecent(doc)}>
-                  <div className="card-icon">📄</div>
-                  <div className="card-title" title={doc.name}>{doc.name}</div>
-                  <div className="card-meta">
-                    <span>{doc.source}</span>
-                    <span>{new Date(doc.lastOpened).toLocaleDateString()}</span>
+      <div className="actions-grid">
+        <div className="action-card" onClick={openFromDevice}>
+          <span className="action-icon" role="img" aria-hidden="true">📂</span>
+          <span className="action-label">Open File</span>
+        </div>
+        <div className="action-card" onClick={() => alert('Feature coming soon!')}>
+          <span className="action-icon" role="img" aria-hidden="true">☁️</span>
+          <span className="action-label">Cloud Sync</span>
+        </div>
+      </div>
+
+      <PullToRefresh onRefresh={handleRefresh}>
+        <h2 className="recents-header">Recent Documents</h2>
+        {filteredRecents.length > 0 ? (
+          <div className="recents-list">
+            {filteredRecents.map(doc => (
+              <div key={doc.id} className="recent-item" onClick={() => openRecent(doc)}>
+                <span className="recent-icon" role="img" aria-hidden="true">📄</span>
+                <div className="recent-info">
+                  <div className="recent-name">{doc.name}</div>
+                  <div className="recent-meta">
+                    {doc.source} • {formatRelativeTime(doc.lastOpened)}
                   </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-recents">
+            Your recent documents will appear here.
+          </div>
+        )}
       </PullToRefresh>
 
       <input
@@ -130,5 +146,3 @@ export default function Home() {
     </div>
   );
 }
-
-
