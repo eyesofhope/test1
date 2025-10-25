@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
+import Settings from './pages/Settings';
 import {DocumentEditorContainerComponent, Ribbon, Inject} from '@syncfusion/ej2-react-documenteditor';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { triggerImpact, triggerSuccess } from './utils/haptics';
 import { saveFolderPreference, getFolderPreference, addRecentDoc } from './utils/storage';
+import { initializeConnectivity, isOnline, addConnectivityListener } from './utils/connectivity';
+import { initializeCache, cacheDocument, getCachedDocument } from './utils/cache';
+import { loadSettings } from './pages/Settings';
 import SaveDialog from './components/SaveDialog';
 import './App.css';
 
@@ -53,6 +57,8 @@ function EditorPage() {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<{ id: string; name?: string } | null>(null);
   const [defaultFilename, setDefaultFilename] = useState('Document');
+  const [online, setOnline] = useState(isOnline());
+  const [enableLocalPaste, setEnableLocalPaste] = useState(!isOnline());
   const location = useLocation();
   // Formatting presets and helpers removed with bottom toolbar
 
@@ -60,12 +66,35 @@ function EditorPage() {
   const onDocumentEditorCreated = () => {
     if (editorRef.current?.documentEditor) {
       // Listen for document changes (like file open)
-      editorRef.current.documentEditor.documentChange = () => {
+      editorRef.current.documentEditor.documentChange = async () => {
         const currentDocName = editorRef.current?.documentEditor?.documentName;
         if (currentDocName && currentDocName.trim() && currentDocName !== 'Document1') {
           const nameWithoutExt = currentDocName.replace(/\.(docx?|txt|rtf)$/i, '');
           setDefaultFilename(nameWithoutExt);
           addRecentDoc(nameWithoutExt, 'Unknown');
+
+          // Auto-cache if enabled and online
+          const settings = loadSettings();
+          if (settings.autoCacheEnabled && online && editorRef.current?.documentEditor) {
+            try {
+              const sfdt = await editorRef.current.documentEditor.serialize();
+              const success = await cacheDocument(nameWithoutExt, sfdt);
+              if (success) {
+                console.log('Document auto-cached:', nameWithoutExt);
+              }
+            } catch (error) {
+              console.error('Failed to auto-cache document:', error);
+            }
+          }
+        }
+      };
+
+      // Also update filename when content changes (for proper sync)
+      editorRef.current.documentEditor.contentChange = () => {
+        const currentDocName = editorRef.current?.documentEditor?.documentName;
+        if (currentDocName && currentDocName.trim() && currentDocName !== 'Document1') {
+          const nameWithoutExt = currentDocName.replace(/\.(docx?|txt|rtf)$/i, '');
+          setDefaultFilename(nameWithoutExt);
         }
       };
 
@@ -145,16 +174,27 @@ function EditorPage() {
     if (savedFolder) {
       setSelectedFolder(savedFolder);
     }
+
+    // Listen for connectivity changes
+    const unsubscribe = addConnectivityListener((status) => {
+      setOnline(status.isOnline);
+      setEnableLocalPaste(!status.isOnline);
+    });
+
+    return unsubscribe;
   }, []);
 
   // Open save dialog
   const openSaveDialog = () => {
     openerRef.current = document.activeElement as HTMLElement | null;
-    setIsSaveDialogOpen(true);
     triggerImpact('Light');
-    if (!defaultFilename || defaultFilename === 'Document') {
-      setDefaultFilename(`Document_${new Date().toISOString().split('T')[0]}`);
+
+    const currentDocName = editorRef.current?.documentEditor?.documentName;
+    if (currentDocName && currentDocName.trim() && currentDocName !== 'Document1') {
+      setDefaultFilename(currentDocName.replace(/\.(docx?|txt|rtf)$/i, ''));
     }
+
+    setIsSaveDialogOpen(true);
   };
 
   // Handle folder selection
@@ -301,6 +341,27 @@ function EditorPage() {
     triggerImpact('Light');
   };
 
+  // Handle cache offline
+  const handleCacheOffline = async () => {
+    if (!editorRef.current?.documentEditor) return;
+    
+    try {
+      triggerImpact('Light');
+      const sfdt = await editorRef.current.documentEditor.serialize();
+      const success = await cacheDocument(defaultFilename, sfdt);
+      
+      if (success) {
+        triggerSuccess();
+        alert(`"${defaultFilename}" is now available offline!`);
+      } else {
+        alert('Failed to cache document for offline use.');
+      }
+    } catch (error) {
+      console.error('Error caching document:', error);
+      alert('Failed to cache document for offline use.');
+    }
+  };
+
   // Removed custom save modal and handlers
 
   const onToolbarClick = (args: any) => {
@@ -397,15 +458,41 @@ function EditorPage() {
     const de = editorRef.current.documentEditor;
     if (state.action === 'new') {
       de.openBlank();
+      setDefaultFilename('Untitled');
       addRecentDoc('Untitled', 'Device');
       window.history.replaceState({}, document.title);
     } else if (state.action === 'open' && state.file instanceof File) {
       de.open(state.file);
-      addRecentDoc(state.file.name.replace(/\.(docx?|txt|rtf)$/i, ''), 'Device');
+      const nameWithoutExt = state.file.name.replace(/\.(docx?|txt|rtf)$/i, '');
+      setDefaultFilename(nameWithoutExt);
+      addRecentDoc(nameWithoutExt, 'Device');
       window.history.replaceState({}, document.title);
     } else if (state.action === 'openByName') {
       // Handle opening recent documents by name
       const handleOpenByName = async () => {
+        // First, try to open from cache if offline or if cached flag is set
+        if (state.cached || !online) {
+          try {
+            const cachedSfdt = await getCachedDocument(state.name);
+            if (cachedSfdt) {
+              console.log('Opening from cache:', state.name);
+              de.open(cachedSfdt);
+              setDefaultFilename(state.name);
+              addRecentDoc(state.name, 'Device');
+              return;
+            } else if (!online) {
+              alert('This document is not cached and you are offline.');
+              return;
+            }
+          } catch (error) {
+            console.error('Error opening cached document:', error);
+            if (!online) {
+              alert('Failed to open cached document.');
+              return;
+            }
+          }
+        }
+
         if (state.filePath && Capacitor.isNativePlatform()) {
           try {
             // Try to read the file using Capacitor Filesystem
@@ -428,7 +515,9 @@ function EditorPage() {
             // Create a File object and open it
             const file = new File([blob], state.filePath, { type: blob.type });
             de.open(file);
-            addRecentDoc(state.name || state.filePath.replace(/\.(docx?|txt|rtf)$/i, ''), 'Device');
+            const nameForStorage = state.name || state.filePath.replace(/\.(docx?|txt|rtf)$/i, '');
+            setDefaultFilename(nameForStorage);
+            addRecentDoc(nameForStorage, 'Device');
           } catch (error) {
             console.warn('Could not open file by name, falling back to file picker:', error);
             // Fallback: trigger file picker
@@ -439,7 +528,9 @@ function EditorPage() {
               const file = (e.target as HTMLInputElement).files?.[0];
               if (file) {
                 de.open(file);
-                addRecentDoc(file.name.replace(/\.(docx?|txt|rtf)$/i, ''), 'Device');
+                const nameWithoutExt = file.name.replace(/\.(docx?|txt|rtf)$/i, '');
+                setDefaultFilename(nameWithoutExt);
+                addRecentDoc(nameWithoutExt, 'Device');
               }
             };
             fileInput.click();
@@ -453,7 +544,9 @@ function EditorPage() {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
               de.open(file);
-              addRecentDoc(file.name.replace(/\.(docx?|txt|rtf)$/i, ''), 'Device');
+              const nameWithoutExt = file.name.replace(/\.(docx?|txt|rtf)$/i, '');
+              setDefaultFilename(nameWithoutExt);
+              addRecentDoc(nameWithoutExt, 'Device');
             }
           };
           fileInput.click();
@@ -463,6 +556,7 @@ function EditorPage() {
       handleOpenByName();
       window.history.replaceState({}, document.title);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, selectedFolder]);
 
 
@@ -470,8 +564,6 @@ function EditorPage() {
 
   return (
     <div className="App document-editor-container" ref={containerRef}>
-      {/* Floating Save Button removed */}
-
       {/* Main Syncfusion toolbar + editor */}
       <div className="main-toolbar">
       <DocumentEditorContainerComponent 
@@ -480,8 +572,9 @@ function EditorPage() {
         enableToolbar={true}
         toolbarMode="Ribbon"
         created={onDocumentEditorCreated}
-        serviceUrl="https://ej2services.syncfusion.com/production/web-services/api/documenteditor/"
+        serviceUrl={online ? "https://ej2services.syncfusion.com/production/web-services/api/documenteditor/" : ""}
         showPropertiesPane={true}
+        enableLocalPaste={enableLocalPaste}
         toolbarClick={onToolbarClick}>
         <Inject services={[Ribbon]}></Inject>
       </DocumentEditorContainerComponent>
@@ -518,6 +611,7 @@ function EditorPage() {
         onSave={handleSaveConfirm}
         onChangeFolder={handleFolderSelection}
         onCancel={handleSaveCancel}
+        onCacheOffline={online ? handleCacheOffline : undefined}
         restoreFocusTo={openerRef.current}
       />
     </div>
@@ -527,10 +621,40 @@ function EditorPage() {
 export default App;
 
 function App() {
+  useEffect(() => {
+    // Initialize connectivity and cache on app start
+    const init = async () => {
+      await initializeConnectivity();
+      await initializeCache();
+      
+      // Apply theme from settings
+      const settings = loadSettings();
+      if (settings.darkModeEnabled) {
+        document.documentElement.classList.add('dark-theme');
+      }
+
+      // Listen for system theme changes if using system theme
+      if (settings.useSystemTheme) {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleThemeChange = (e: MediaQueryListEvent) => {
+          if (e.matches) {
+            document.documentElement.classList.add('dark-theme');
+          } else {
+            document.documentElement.classList.remove('dark-theme');
+          }
+        };
+        mediaQuery.addEventListener('change', handleThemeChange);
+        return () => mediaQuery.removeEventListener('change', handleThemeChange);
+      }
+    };
+    init();
+  }, []);
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/editor" element={<EditorPage />} />
+      <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<Home />} />
     </Routes>
   );

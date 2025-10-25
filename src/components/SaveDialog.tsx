@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { triggerImpact } from '../utils/haptics';
+import { loadSettings } from '../pages/Settings';
 import './SaveDialog.css';
 
 // Filename sanitization utility (same as in App.tsx)
@@ -34,6 +35,7 @@ interface SaveDialogProps {
   onSave: (filename: string) => void;
   onChangeFolder: () => void;
   onCancel: () => void;
+  onCacheOffline?: () => void;
   restoreFocusTo?: HTMLElement | null;
 }
 
@@ -44,11 +46,13 @@ const SaveDialog: React.FC<SaveDialogProps> = ({
   onSave,
   onChangeFolder,
   onCancel,
+  onCacheOffline,
   restoreFocusTo
 }) => {
   const [filename, setFilename] = useState(defaultFilename);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const focusableElementsRef = useRef<HTMLElement[]>([]);
+  const settings = loadSettings();
 
   // Update filename when defaultFilename changes
   useEffect(() => {
@@ -173,6 +177,13 @@ const SaveDialog: React.FC<SaveDialogProps> = ({
     onChangeFolder();
   };
 
+  const handleCacheOffline = () => {
+    if (onCacheOffline) {
+      triggerImpact('Light');
+      onCacheOffline();
+    }
+  };
+
   if (!isOpen) return null;
 
   const isNative = Capacitor.isNativePlatform();
@@ -244,6 +255,21 @@ const SaveDialog: React.FC<SaveDialogProps> = ({
           >
             Cancel
           </button>
+          {onCacheOffline && !settings.autoCacheEnabled && (
+            <button
+              type="button"
+              className="save-dialog-btn save-dialog-btn--cache"
+              onClick={handleCacheOffline}
+              title="Make this document available for offline editing"
+            >
+              Make Available Offline
+            </button>
+          )}
+          {settings.autoCacheEnabled && (
+            <div className="save-dialog-cache-info">
+              ✓ Auto-cache enabled
+            </div>
+          )}
           <button
             type="button"
             className="save-dialog-btn save-dialog-btn--primary"

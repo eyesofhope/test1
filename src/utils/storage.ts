@@ -16,6 +16,7 @@ export interface RecentDoc {
   lastOpened: number;
   source: 'Device' | 'Cloud' | 'Unknown';
   filePath?: string;
+  cached?: boolean;
 }
 
 // Folder preference functions

@@ -173,6 +173,28 @@
   align-items: center;
 }
 
+/* Cache button */
+.save-dialog-btn--cache {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.save-dialog-btn--cache:hover {
+  background: #059669;
+}
+
+/* Cache info */
+.save-dialog-cache-info {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 13px;
+  color: #10b981;
+  font-weight: 500;
+}
+
 /* Mobile breakpoint */
 @media (max-width: 600px) {
   .save-dialog-overlay {

@@ -3,14 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { PullToRefresh, ConfigProvider } from 'antd-mobile';
 import enUS from 'antd-mobile/es/locales/en-US';
 import { triggerImpact, triggerSuccess } from '../utils/haptics';
+import { isDocumentCached } from '../utils/cache';
+import { isOnline, addConnectivityListener } from '../utils/connectivity';
+import { getRecentDocs } from '../utils/storage';
+import OfflineWarning from '../components/OfflineWarning';
 import './Home.css';
 
 type RecentDoc = {
   id: string;
   name: string;
-  lastOpened: number; // epoch ms
+  lastOpened: number;
   source: 'Device' | 'Cloud' | 'Unknown';
   filePath?: string;
+  cached?: boolean;
 };
 
 const RECENTS_KEY = 'recentDocs';
@@ -43,12 +48,45 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState('');
   const [recents, setRecents] = useState<RecentDoc[]>(readRecents);
+  const [online, setOnline] = useState(isOnline());
+  const [showOfflineWarning, setShowOfflineWarning] = useState(false);
+
+  useEffect(() => {
+    // Check and show offline warning on mount if offline
+    if (!isOnline()) {
+      setShowOfflineWarning(true);
+    }
+
+    // Listen for connectivity changes
+    const unsubscribe = addConnectivityListener((status) => {
+      setOnline(status.isOnline);
+    });
+
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const onStorage = () => setRecents(readRecents());
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  // Update cached status for recents
+  useEffect(() => {
+    const updateCachedStatus = async () => {
+      const updated = await Promise.all(
+        recents.map(async (doc) => ({
+          ...doc,
+          cached: await isDocumentCached(doc.name)
+        }))
+      );
+      if (JSON.stringify(updated) !== JSON.stringify(recents)) {
+        setRecents(updated);
+      }
+    };
+    updateCachedStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recents.length]);
 
   const filteredRecents = useMemo(() => {
     if (!query.trim()) return recents;
@@ -63,6 +101,10 @@ export default function Home() {
 
   const openFromDevice = () => {
     triggerImpact('Light');
+    if (!online) {
+      alert('Opening DOCX files requires internet connection. Only cached documents can be opened offline.');
+      return;
+    }
     fileInputRef.current?.click();
   };
 
@@ -75,7 +117,24 @@ export default function Home() {
 
   const openRecent = (doc: RecentDoc) => {
     triggerImpact('Light');
-    navigate('/editor', { state: { action: 'openByName', name: doc.name, filePath: doc.filePath || `${doc.name}.docx` } });
+    if (!online && !doc.cached) {
+      alert('This document is not cached. Connect to the internet to open it.');
+      return;
+    }
+    navigate('/editor', { state: { action: 'openByName', name: doc.name, filePath: doc.filePath || `${doc.name}.docx`, cached: doc.cached } });
+  };
+
+  const goToSettings = () => {
+    triggerImpact('Light');
+    navigate('/settings');
+  };
+
+  const removeRecent = (e: React.MouseEvent, docId: string) => {
+    e.stopPropagation();
+    triggerImpact('Light');
+    const updatedRecents = recents.filter(doc => doc.id !== docId);
+    localStorage.setItem(RECENTS_KEY, JSON.stringify(updatedRecents));
+    setRecents(updatedRecents);
   };
 
   const handleRefresh = async () => {
@@ -88,10 +147,12 @@ export default function Home() {
     <div className="home-container">
       <header className="home-header">
         <h1 className="home-title">JWORD</h1>
-        <button className="new-doc-btn" onClick={createNew}>
-          <span role="img" aria-hidden="true">➕</span>
-          New Doc
-        </button>
+        <div className="home-header-actions">
+          {!online && <span className="offline-badge">Offline</span>}
+          <button className="settings-btn" onClick={goToSettings} aria-label="Settings">
+            ⚙️
+          </button>
+        </div>
       </header>
 
       <input
@@ -108,36 +169,59 @@ export default function Home() {
           <span className="action-icon" role="img" aria-hidden="true">📂</span>
           <span className="action-label">Open File</span>
         </div>
-        <div className="action-card" onClick={() => alert('Feature coming soon!')}>
-          <span className="action-icon" role="img" aria-hidden="true">☁️</span>
-          <span className="action-label">Cloud Sync</span>
+        <div className="action-card" onClick={createNew}>
+          <span className="action-icon" role="img" aria-hidden="true">📝</span>
+          <span className="action-label">New Doc</span>
         </div>
       </div>
 
-      <ConfigProvider locale={enUS}>
-        <PullToRefresh onRefresh={handleRefresh}>
-          <h2 className="recents-header">Recent Documents</h2>
-          {filteredRecents.length > 0 ? (
-            <div className="recents-list">
-              {filteredRecents.map(doc => (
-                <div key={doc.id} className="recent-item" onClick={() => openRecent(doc)}>
-                  <span className="recent-icon" role="img" aria-hidden="true">📄</span>
-                  <div className="recent-info">
-                    <div className="recent-name">{doc.name}</div>
-                    <div className="recent-meta">
-                      {doc.source} • {formatRelativeTime(doc.lastOpened)}
+      <div className="recents-container">
+        <h2 className="recents-header">Recent Documents</h2>
+        <div className="recents-scrollable">
+          <ConfigProvider locale={enUS}>
+            <PullToRefresh onRefresh={handleRefresh}>
+              {filteredRecents.length > 0 ? (
+                <div className="recents-list">
+                  {filteredRecents.map(doc => (
+                    <div 
+                      key={doc.id} 
+                      className={`recent-item ${!online && !doc.cached ? 'recent-item-disabled' : ''}`}
+                    >
+                      <div className="recent-item-content" onClick={() => openRecent(doc)}>
+                        <span className="recent-icon" role="img" aria-hidden="true">📄</span>
+                        <div className="recent-info">
+                          <div className="recent-name">{doc.name}</div>
+                          <div className="recent-meta">
+                            {doc.source} • {formatRelativeTime(doc.lastOpened)}
+                            {doc.cached && <span className="cached-badge">Cached</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        className="recent-remove-btn"
+                        onClick={(e) => removeRecent(e, doc.id)}
+                        aria-label={`Remove ${doc.name} from recent files`}
+                        title="Remove from recent files"
+                      >
+                        ✕
+                      </button>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-recents">
-              Your recent documents will appear here.
-            </div>
-          )}
-        </PullToRefresh>
-      </ConfigProvider>
+              ) : (
+                <div className="empty-recents">
+                  Your recent documents will appear here.
+                </div>
+              )}
+            </PullToRefresh>
+          </ConfigProvider>
+        </div>
+      </div>
+
+      <OfflineWarning 
+        isOpen={showOfflineWarning} 
+        onClose={() => setShowOfflineWarning(false)} 
+      />
 
       <input
         ref={fileInputRef}
